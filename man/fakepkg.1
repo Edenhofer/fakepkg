@@ -1,0 +1,75 @@
+.TH FAKEPKG "1" "June 2015" "NONE" "User Commands"
+.SH NAME
+fakepkg \- reassemble Arch Linux packages
+.SH SYNOPSIS
+.B fakepkg
+[\fIOPTION\fR]... [\fIPACKAGE\fR]...
+.SH DESCRIPTION
+This script was design to reassemble installed packages from its deliverd files.
+It comes in handy if there is no internet connection available and you have no
+access to a up-to-date package cache.
+.SH OPTIONS
+.TP
+.BR \-h , "\-\-help"
+Display this help message and exit
+.TP
+.BR \-v , "\-\-verbose"
+Increase verbosity
+.TP
+.BR \-j , "\-\-jobs <jobs>"
+Build in parallel - you may want to set XZ_OPT
+.TP
+.BR \-o , "\-\-out <dir>"
+Write output to <dir>
+.SH ENVIRONMENT VARIABLES
+.B XZ_OPT
+is fully honored and is considered by tar. Common usage scenarios are to
+utilize multicore compression. Maximum performace was achieved when used in
+conjunction with two jobs of fakepkg. However more than two active jobs may even
+lead to performance loss.
+.SH EXAMPLES
+Reassamble the package named "tar"
+
+.ti 12
+.B fakepkg
+tar
+
+Reassamble the packages "gzip" and "pacman" and place the packages in ~/Downloads
+
+.ti 12
+.B fakepkg
+-o ~/Downloads gzip pacman
+
+Reassamble a bunch of packages in parallel with verbose output
+
+.ti 12
+.B fakepkg
+-j 2 -v gzip munge binutils
+
+Recreate all installed packages with xz's multicore compression
+
+.ti 12
+XZ_OPT="-T 0"
+.B fakepkg
+$(pacman -Qsq)
+
+.SH "BUGS"
+.sp
+Bugs? You must be kidding; there are no bugs in this software\&.
+But if we happen to be wrong, send us an email with as much detail as possible
+to gordian.edenhofer@gmail.com.
+
+.SH AUTHOR
+Written by Gordian Edenhofer
+.SH COPYRIGHT
+Copyright \(co 2015 Gordian Edenhofer
+License GPLv2+: GNU GPL version 2 or later <http://gnu.org/licenses/gpl.html>.
+
+.br
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+.SH "SEE ALSO"
+.B pacman,
+.B tar,
+.B xz,
+.B parallel
