@@ -3,7 +3,6 @@ fakepkg
 
 This script was design to reassemble installed packages from its deliverd files. It comes in handy if there is no internet connection available and you have no access to an up-to-date package cache.
 
-
 ----------
 **Author**
 ----------
