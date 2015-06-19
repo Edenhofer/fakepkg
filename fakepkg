@@ -25,6 +25,7 @@ function fakebuild() {
     [[ -f $PKG_DB_ENTRY/changelog ]] && cp -a $PKG_DB_ENTRY/changelog .Changelog
 
     # Hacking together the .PKGINFO
+    sed -n -e '/%BACKUP%/,$p' $PKG_DB_ENTRY/files  | awk '{print $1}' > .PKGINFO
     sed -i '/^$/d' PRE_PKGINFO
     while read line; do
         if [[ $line =~ %[A-Z]+% ]]; then
@@ -35,6 +36,8 @@ function fakebuild() {
                 "desc")     PKG_VAR=pkgdesc;;
                 "groups")   PKG_VAR=group;;
                 "depends")  PKG_VAR=depend;;
+                "optdepends")   PKG_VAR=optdepend;;
+                "conflicts")    PKG_VAR=conflict;;
             esac
         else
             echo -e "$PKG_VAR = $line" >> .PKGINFO
@@ -75,7 +78,7 @@ export -f fakebuild
 # Help function, no arguments required
 function help() {
     cat << 'EOF'
-fakepkg 1.21.4
+fakepkg 1.21.5
 This script was design to reassemble installed packages from its deliverd files.
 It comes in handy if there is no internet connection available and you have no
 access to an up-to-date package cache.
