@@ -38,7 +38,7 @@ Alternatively it may also make sense to set the tar environment variable for mul
 
 =head1 AUTHOR
 
-Gordian Edenhofer
+Gordian Edenhofer <gordian.edenhofer@gmail.com>
 
 =head1 LICENSE
 
