@@ -6,7 +6,7 @@ fakepkg - reassemble Arch Linux packages
 
 =head1 SYNOPSIS
 
-Usage: I<pacaur> E<lt>operationE<gt> [ options ] [ target(s) ]
+Usage: I<fakepkg> [ OPTIONS ] [ TARGETS ]
 
 =head1 DESCRIPTION
 
