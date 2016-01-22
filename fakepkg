@@ -1,7 +1,7 @@
 #!/bin/bash
 
 declare -r myname='fakepkg'
-declare -r myversion='1.30.0'
+declare -r myversion='1.31.0'
 
 # Actual assembly function
 # $1: pkgname , $2: destination dir , $3 verbosity
@@ -63,10 +63,10 @@ function fakebuild() {
 	# Taring things together
 	if [[ $3 -ge "1" ]]; then
 		#XZ_OPT="-T 0" \
-		tar --ignore-failed-read --owner=0 --group=0 --no-recursion -caf ${PKG_NAME}.pkg.tar.${PKG_EXT} -T ./tmp_file_list
+		tar --ignore-failed-read --owner=0 --group=0 --no-recursion -c -a --force-local -f "${PKG_NAME}.pkg.tar.${PKG_EXT}" -T ./tmp_file_list
 	else
 		#XZ_OPT="-T 0" \
-		tar --ignore-failed-read --owner=0 --group=0 --no-recursion -caf ${PKG_NAME}.pkg.tar.${PKG_EXT} -T ./tmp_file_list 2>&1 >/dev/null | grep -i "permission denied" >/dev/null
+		tar --ignore-failed-read --owner=0 --group=0 --no-recursion -c -a --force-local -f "${PKG_NAME}.pkg.tar.${PKG_EXT}" -T ./tmp_file_list 2>&1 >/dev/null | grep -i "permission denied" >/dev/null
 		[[ $? -eq 0 ]] && echo -e "The permission to open one or more directories was denied for \e[39;1m$PKG_NAME\e[0m. The package may be incomplete!"
 	fi
 
@@ -167,8 +167,8 @@ PKG_LIST=($*)
 
 # Checking the PKG_LIST
 [[ ${#PKG_LIST[@]} == 0 ]] && help && exit -1
-if [[ $(pacman -T ${PKG_LIST[@]} 2>&1 >/dev/null; echo $?) -ne 0 ]]; then
-	echo -e "The following package(s) could not be found on your system: \e[39;1m$(pacman -T ${PKG_LIST[@]} | tr '\n' ' ')\e[0m"
+if [[ ! -d /var/lib/pacman/local/${PKG_LIST[@]}-$(pacman -Qi ${PKG_LIST[@]} 2>/dev/null | sed -n 2p | awk '{print $3}') ]]; then
+	echo -e "The following package(s) could not be found on your system: \e[39;1m$(pacman -Qi ${PKG_LIST[@]} 2>&1 | awk '{print $3}' | tr '\n' ' ')\e[0m"
 	echo -e "Keep in mind that the package(s) have to be installed!"
 	exit -127
 fi
