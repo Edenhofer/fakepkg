@@ -1,7 +1,7 @@
 #!/bin/bash
 
 declare -r myname='fakepkg'
-declare -r myversion='1.31.0'
+declare -r myversion='1.31.1'
 
 # Actual assembly function
 # $1: pkgname , $2: destination dir , $3 verbosity
@@ -167,8 +167,13 @@ PKG_LIST=($*)
 
 # Checking the PKG_LIST
 [[ ${#PKG_LIST[@]} == 0 ]] && help && exit -1
-if [[ ! -d /var/lib/pacman/local/${PKG_LIST[@]}-$(pacman -Qi ${PKG_LIST[@]} 2>/dev/null | sed -n 2p | awk '{print $3}') ]]; then
-	echo -e "The following package(s) could not be found on your system: \e[39;1m$(pacman -Qi ${PKG_LIST[@]} 2>&1 | awk '{print $3}' | tr '\n' ' ')\e[0m"
+for package in "${PKG_LIST[@]}"; do
+	if [[ ! -d /var/lib/pacman/local/${package}-$(pacman -Qi ${package} 2>/dev/null | sed -n 2p | awk '{print $3}') ]]; then
+		PKG_NOTFOUND+=("\"${package}\" ")
+	fi
+done
+if [[ ${#PKG_NOTFOUND} -ne 0 ]]; then
+	echo -e "The following package(s) could not be found on your system: \e[39;1m${PKG_NOTFOUND[@]}\e[0m"
 	echo -e "Keep in mind that the package(s) have to be installed!"
 	exit -127
 fi
