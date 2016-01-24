@@ -1,7 +1,11 @@
 #!/bin/bash
 
 declare -r myname='fakepkg'
-declare -r myversion='1.31.1'
+declare -r myversion='1.40.0'
+
+# Directory in /tmp on which basis mktemp will create a unique tmp for each fakebuild
+# Make this variable something rather unique since on cleanup anything starting with this will be erased
+declare -r tmp_root='fakepkg'
 
 # Actual assembly function
 # $1: pkgname , $2: destination dir , $3 verbosity
@@ -17,8 +21,8 @@ function fakebuild() {
 		return -2
 	fi
 
-	# Create and enter a temporaray dir
-	TMPDIR=$(mktemp -q -p /tmp -t -d fakepackage.XXX)
+	# Create and enter a temporary dir
+	TMPDIR=$(mktemp -q -p /tmp -t -d "${tmp_root}".XXX)
 	cd $TMPDIR
 
 	# Fetching the .PKGINFO, .Changelog, .MTREE and .INSTALL file
@@ -116,6 +120,16 @@ function help() {
 	The script requires bash>=4.2, pacman, tar, xz and gzip.
 	EOF
 }
+
+# Clean up temporary dirs recursively
+function clean_up {
+	rm -r /tmp/"${tmp_root}".*
+	echo
+	exit
+}
+
+# Trap termination signals
+trap clean_up SIGHUP SIGINT SIGTERM
 
 # Show help and quit if invoced
 [[ $# -eq 0 ]] && help && exit -1
