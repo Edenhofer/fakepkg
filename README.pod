@@ -2,25 +2,67 @@
 
 =head1 NAME
 
-fakepkg - reassemble Arch Linux packages 
+fakepkg - reassemble Arch Linux packages
 
 =head1 SYNOPSIS
 
-Usage: I<fakepkg> [ OPTIONS ] [ TARGETS ]
+Usage: B<fakepkg> [ OPTIONS ] [ TARGETS ]
 
 =head1 DESCRIPTION
 
-Pacman usually stores all downloaded packages in its package cache to enable the user to downgrade each and every package. However if the package cache was removed either by accident or by purpose to e.g. save disk space, it may be usefull to recrete the cache at a later point. The obvious choice would be to download all those packages again. However this is actually redundant since all files and folders from the packages should reside on your system. That is where fakepkg comes in handy. Its purpose is to recreate any given package as long as it is installed on your system. This probably saves you a lot of bandwith and time in comparison to building the package from source or downloading it from third parties.
+Pacman usually stores all downloaded packages in its package cache to enable the user
+to downgrade each and every package. However if the package cache was removed either
+by accident or by purpose to e.g. save disk space, it may be usefull to recrete the
+cache at a later point. The obvious choice would be to download all those packages again.
+However this is actually redundant since all files and folders from the packages should
+reside on your system. This is where fakepkg comes in handy. Its purpose is to recreate
+any given package as long as it is installed on your system. This probably saves you a
+lot of bandwith and time in comparison to building the package from source or downloading
+it from third parties.
 
-B<Warning:> The files from your system are taken as they are, hence any modifications done to them by you or your system will be present in the assembled package. Distributing the recreated package is therefore discouraged. See ABS and Arch Rollback Machine for alternatives.
+B<Warning:> The files from your system are taken as they are, hence any modifications
+done to them by you or any program will be present in the assembled package. This might
+be seen as either downside or benefit. However distributing the recreated package is
+therefore discouraged. See ABS and Arch Rollback Machine for alternatives.
 
-This might be seen as either downside or benefit.
+B<Note:> Certain files and folders may only be read by root.
+Though fakepkg will warn you in those cases, consider running it as root.
 
-B<Note:> Certain files and folders may only be read by root. Though fakepkg will warn you in those cases, consider running it as root.
+B<Note:> Reassembling packages may take some time, so be patient.
+However you may speed things up a little by using B<-j> or B<XZ_OPT>.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-h>,B<--help>
+
+Display this help message and exit
+
+=item B<-v>,B<--verbose>
+
+Increase verbosity
+
+=item B<-j>,B<--jobs <jobs>>
+
+Build in parallel - you may want to set XZ_OPT
+
+=item B<-o>,B<--out <dir>>
+
+Write output to <dir>
+
+=back
+
+=head1 ENVIRONMENT VARIABLES
+
+B<XZ_OPT> is fully honored and is considered by tar. Common usage scenarios are to
+utilize multicore compression. Maximum performace was achieved when used in
+conjunction with two jobs of fakepkg. However more than two active jobs may even
+lead to performance loss.
 
 =head1 EXAMPLES
 
-To reassemble e.g. gzip and binutils, use the following command.
+To reassemble e.g. gzip and binutils, use the following command:
 
     fakepkg gzip binutils
 
@@ -28,11 +70,13 @@ You may as well specify a destination folder:
 
     fakepkg -o /var/cache/pacman/pkg tar xz
 
-Recreating multiple packages at once with only one thread can take some time. This can be sped up by utilizing multiple jobs, in this case 4.
+Recreating multiple packages at once with only one thread can take some time. This
+can be sped up by utilizing multiple jobs, in this case 4:
 
     fakepkg -j 4 linux slurm-llnl virtualbox qemu
 
-Alternatively it may also make sense to set the tar environment variable for multi core compression. Hereby tar uses all the CPU power hence starting multiple jobs brings no performance gain.
+Alternatively it may also make sense to set the tar environment variable for multi
+core compression. Hereby tar uses all the CPU power hence starting multiple jobs brings no performance gain:
 
     XZ_OPT="-T 0" fakepkg $(pacman -Qsq)
 
@@ -42,4 +86,10 @@ Gordian Edenhofer <gordian.edenhofer@gmail.com>
 
 =head1 LICENSE
 
-Unless otherwise stated, the files in this project may be distributed under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or any later version. This work is distributed in the hope that it will be useful, but without any warranty; without even the implied warranty of merchantability or fitness for a particular purpose. See [version 2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) and [version 3] (https://www.gnu.org/copyleft/gpl-3.0.html) of the GNU General Public License for more details.
+Unless otherwise stated, the files in this project may be distributed under the
+termsof the GNU General Public License as published by the Free Software Foundation;
+either version 2 of the License, or any later version. This work is distributed
+in the hope that it will be useful, but without any warranty; without even the
+implied warranty of merchantability or fitness for a particular purpose. See [version 2]
+(https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) and [version 3]
+(https://www.gnu.org/copyleft/gpl-3.0.html) of the GNU General Public License for more details.
