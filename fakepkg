@@ -1,9 +1,9 @@
 #!/bin/bash
 
 declare -r myname='fakepkg'
-declare -r myversion='1.40.0'
+declare -r myversion='1.40.2'
 
-# Directory in /tmp on which basis mktemp will create a unique tmp for each fakebuild
+# Directory in /tmp on which basis mktemp will create an unique tmp for each fakebuild
 # Make this variable something rather unique since on cleanup anything starting with this will be erased
 declare -r tmp_root='fakepkg'
 
@@ -11,29 +11,29 @@ declare -r tmp_root='fakepkg'
 # $1: pkgname , $2: destination dir , $3 verbosity
 function fakebuild() {
 	# Setting global vars
-	PKG_NAME="$1-$(pacman -Qi $1 | sed -n 2p | awk '{print $3}')"
-	PKG_DB_ENTRY="/var/lib/pacman/local/$PKG_NAME"
+	PKG_NAME="${1}-$(pacman -Qi $1 | sed -n 2p | awk '{print $3}')"
+	PKG_DB_ENTRY="/var/lib/pacman/local/${PKG_NAME}"
 	PKG_EXT="xz"   # Default: this does define the compression format
 
 	# Skipping if the package already exists in the destination dir
-	if [[ -f "$2/${PKG_NAME}.pkg.tar.${PKG_EXT}" ]]; then
-		echo -e "\e[39;1m${PKG_NAME}.pkg.tar.${PKG_EXT}\e[0m already exists in $2! Skipping..."
+	if [[ -f "${2}/${PKG_NAME}.pkg.tar.${PKG_EXT}" ]]; then
+		echo -e "\e[39;1m${PKG_NAME}.pkg.tar.${PKG_EXT}\e[0m already exists in ${2}! Skipping..."
 		return -2
 	fi
 
 	# Create and enter a temporary dir
 	TMPDIR=$(mktemp -q -p /tmp -t -d "${tmp_root}".XXX)
-	cd $TMPDIR
+	cd "$TMPDIR"
 
 	# Fetching the .PKGINFO, .Changelog, .MTREE and .INSTALL file
-	[[ -f $PKG_DB_ENTRY/desc ]] && cp -a $PKG_DB_ENTRY/desc PRE_PKGINFO || (echo -e "Could not find a databse entry for \e[39;1m$PKG_NAME\e[0m" && return -1)
-	[[ -f $PKG_DB_ENTRY/install ]] && cp -a $PKG_DB_ENTRY/install .INSTALL
-	[[ -f $PKG_DB_ENTRY/mtree ]] && gzip -dc $PKG_DB_ENTRY/mtree > .MTREE
-	[[ -f $PKG_DB_ENTRY/changelog ]] && cp -a $PKG_DB_ENTRY/changelog .Changelog
+	[[ -f "${PKG_DB_ENTRY}/desc" ]] && cp -a "${PKG_DB_ENTRY}/desc" pre_PKGINFO || (echo -e "Could not find a databse entry for \e[39;1m${PKG_NAME}\e[0m" && return -1)
+	[[ -f "${PKG_DB_ENTRY}/install" ]] && cp -a "${PKG_DB_ENTRY}/install" .INSTALL
+	[[ -f "${PKG_DB_ENTRY}/mtree" ]] && gzip -dc "${PKG_DB_ENTRY}/mtree" > .MTREE
+	[[ -f "${PKG_DB_ENTRY}/changelog" ]] && cp -a "${PKG_DB_ENTRY}/changelog" .Changelog
 
 	# Hacking together the .PKGINFO
-	sed -n -e '/%BACKUP%/,$p' $PKG_DB_ENTRY/files  | awk '{print $1}' > .PKGINFO
-	sed -i '/^$/d' PRE_PKGINFO
+	sed -n -e '/%BACKUP%/,$p' "${PKG_DB_ENTRY}/files" | awk '{print $1}' >> pre_PKGINFO
+	sed -i '/^$/d' pre_PKGINFO
 	while read line; do
 		if [[ $line =~ %[A-Z]+% ]]; then
 			PKG_VAR=$(echo ${line,,} | tr -d '%')
@@ -49,37 +49,35 @@ function fakebuild() {
 		else
 			echo -e "$PKG_VAR = $line" >> .PKGINFO
 		fi
-	done < PRE_PKGINFO
+	done < pre_PKGINFO
 	sed -i '/installdate/d' .PKGINFO
 	sed -i '/validation/d' .PKGINFO
-	rm PRE_PKGINFO
+	#rm pre_PKGINFO
 
 	# Assembling a list of all files belonging to the package
-	PACFILES=$(pacman -Qlq $1)
-	PACFILES="$PACFILES .PKGINFO"
-	[[ -f .INSTALL ]] && PACFILES="$PACFILES .INSTALL"
-	[[ -f .Changelog ]] && PACFILES="$PACFILES .Changelog"
-	[[ -f .MTREE ]] && PACFILES="$PACFILES .MTREE"
-
-	# Print the list of files into a file itslef since tar is unable to handle those many arguments
-	echo "$PACFILES" > ./tmp_file_list
+	# The tar command is unable to handle those many arguments therefore create a file
+	pacman -Qlq $1 > ./package_file_list
+	echo ".PKGINFO" >> ./package_file_list
+	[[ -f ".INSTALL" ]] && echo ".INSTALL" >> ./package_file_list
+	[[ -f ".Changelog" ]] && echo ".Changelog" >> ./package_file_list
+	[[ -f ".MTREE" ]] && echo ".MTREE" >> ./package_file_list
 
 	# Taring things together
 	if [[ $3 -ge "1" ]]; then
 		#XZ_OPT="-T 0" \
-		tar --ignore-failed-read --owner=0 --group=0 --no-recursion -c -a --force-local -f "${PKG_NAME}.pkg.tar.${PKG_EXT}" -T ./tmp_file_list
+		tar --ignore-failed-read --owner=0 --group=0 --no-recursion -c -a --force-local -f "${PKG_NAME}.pkg.tar.${PKG_EXT}" -T ./package_file_list
 	else
 		#XZ_OPT="-T 0" \
-		tar --ignore-failed-read --owner=0 --group=0 --no-recursion -c -a --force-local -f "${PKG_NAME}.pkg.tar.${PKG_EXT}" -T ./tmp_file_list 2>&1 >/dev/null | grep -i "permission denied" >/dev/null
-		[[ $? -eq 0 ]] && echo -e "The permission to open one or more directories was denied for \e[39;1m$PKG_NAME\e[0m. The package may be incomplete!"
+		tar --ignore-failed-read --owner=0 --group=0 --no-recursion -c -a --force-local -f "${PKG_NAME}.pkg.tar.${PKG_EXT}" -T ./package_file_list 2>&1 >/dev/null | grep -i "permission denied" >/dev/null
+		[[ $? -eq 0 ]] && echo -e "The permission to open one or more directories was denied for \e[39;1m${PKG_NAME}\e[0m. The package may be incomplete!"
 	fi
 
 	# Cleanup
 	if [[ -f ${PKG_NAME}.pkg.tar.${PKG_EXT} ]]; then
 		mv ${PKG_NAME}.pkg.tar.${PKG_EXT} $2
-		echo -e "Reassembled \e[39;1m$PKG_NAME\e[0m successfully!"
+		echo -e "Reassembled \e[39;1m${PKG_NAME}\e[0m successfully!"
 	else
-		echo -e "Internal \e[39;1merror\e[0m occured while processing \e[39;1m$PKG_NAME\e[0m!"
+		echo -e "Internal \e[39;1merror\e[0m occured while processing \e[39;1m${PKG_NAME}\e[0m!"
 	fi
 	rm -rf $TMPDIR
 }
@@ -131,7 +129,7 @@ function clean_up {
 # Trap termination signals
 trap clean_up SIGHUP SIGINT SIGTERM
 
-# Show help and quit if invoced
+# Show help and quit if invoked with no parameters
 [[ $# -eq 0 ]] && help && exit -1
 for ARG in "$@"; do
 	[[ $ARG == "-h" || $ARG == "--help" ]] && help && exit 0

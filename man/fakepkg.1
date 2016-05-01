@@ -1,13 +1,20 @@
-.TH FAKEPKG "1" "June 2015" "NONE" "User Commands"
+.TH FAKEPKG "1" "May 2016" "NONE" "User Commands"
 .SH NAME
 fakepkg \- reassemble Arch Linux packages
 .SH SYNOPSIS
 .B fakepkg
 [\fIOPTION\fR]... [\fIPACKAGE\fR]...
 .SH DESCRIPTION
-This script was design to reassemble installed packages from its deliverd files.
+This script was designed to reassemble installed packages from its deliverd files.
 It comes in handy if there is no internet connection available and you have no
 access to a up-to-date package cache.
+.br
+Reassembling packages may take some time, so be patient. However you may speed
+things up a little by using
+.B \-j
+or
+.B XZ_OPT
+\ .
 .SH OPTIONS
 .TP
 .BR \-h , "\-\-help"
