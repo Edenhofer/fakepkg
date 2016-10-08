@@ -1,7 +1,7 @@
 #!/bin/bash
 
 declare -r myname='fakepkg'
-declare -r myversion='1.40.2'
+declare -r myver='1.40.2'
 
 # Directory in /tmp on which basis mktemp will create an unique tmp for each fakebuild
 # Make this variable something rather unique since on cleanup anything starting with this will be erased
@@ -15,7 +15,7 @@ function fakebuild() {
 	PKG_DB_ENTRY="/var/lib/pacman/local/${PKG_NAME}"
 	PKG_EXT="xz"   # Default: this does define the compression format
 
-	# Skipping if the package already exists in the destination dir
+	# Skip if the package already exists in the destination dir
 	if [[ -f "${2}/${PKG_NAME}.pkg.tar.${PKG_EXT}" ]]; then
 		echo -e "\e[39;1m${PKG_NAME}.pkg.tar.${PKG_EXT}\e[0m already exists in ${2}! Skipping..."
 		return -2
@@ -52,10 +52,9 @@ function fakebuild() {
 	done < pre_PKGINFO
 	sed -i '/installdate/d' .PKGINFO
 	sed -i '/validation/d' .PKGINFO
-	#rm pre_PKGINFO
 
 	# Assembling a list of all files belonging to the package
-	# The tar command is unable to handle those many arguments therefore create a file
+	# The tar command is unable to handle very many arguments therefore create a file
 	pacman -Qlq $1 > ./package_file_list
 	echo ".PKGINFO" >> ./package_file_list
 	[[ -f ".INSTALL" ]] && echo ".INSTALL" >> ./package_file_list
@@ -83,11 +82,12 @@ function fakebuild() {
 }
 
 # Run fakebuild in parralel with at maximum $MAX_JOBS jobs
-MAX_JOBS=1	# Default value
+# By default only run one job
+MAX_JOBS=1
 function parallelize() {
 	while [[ $# -gt 0 ]] ; do
-		JOB_COUNT=(`jobs -p`)
-		if [[ ${#JOB_COUNT[@]} -lt $MAX_JOBS ]] ; then
+		job_count=($(jobs -p))
+		if [[ ${#job_count[@]} -lt $MAX_JOBS ]] ; then
 			fakebuild "$1" "$DEST_DIR" "$VERBOSITY" &
 			shift
 		fi
@@ -95,10 +95,10 @@ function parallelize() {
 	wait
 }
 
-# Help function, no arguments required
-function help() {
+# Print usage information, no arguments required
+function usage() {
 	cat <<-EOF
-	$myname $myversion
+	$myname $myver
 	This script was design to reassemble installed packages from its deliverd files.
 	It comes in handy if there is no internet connection available and you have no
 	access to an up-to-date package cache.
@@ -111,12 +111,18 @@ function help() {
 
 	Examples:   # $myname slurm-llnl
 	            # $myname gzip munge binutils -o ~/Downloads
-	            # $myname -o /tmp -p 5 gzip munge binutils
+	            # $myname -o /tmp -j 5 gzip munge binutils
 	            # $myname \$(pacman -Qsq)
 
-	Copyright (c) Gordian Edenhofer <gordian.edenhofer@gmail.com>
+	Copyright (C) Gordian Edenhofer <gordian.edenhofer@gmail.com>
 	The script requires bash>=4.2, pacman, tar, xz and gzip.
 	EOF
+}
+
+function version() {
+	echo "$myname $myver"
+	echo "Copyright (C) Gordian Edenhofer <gordian.edenhofer@gmail.com>"
+	echo "Copyright (C) 2008-2016 Pacman Development Team <pacman-dev@archlinux.org>"
 }
 
 # Clean up temporary dirs recursively
@@ -129,15 +135,15 @@ function clean_up {
 # Trap termination signals
 trap clean_up SIGHUP SIGINT SIGTERM
 
-# Show help and quit if invoked with no parameters
-[[ $# -eq 0 ]] && help && exit -1
+# Show usage and quit if invoked with no parameters
+[[ $# -eq 0 ]] && usage && exit 1
 for ARG in "$@"; do
-	[[ $ARG == "-h" || $ARG == "--help" ]] && help && exit 0
+	[[ $ARG == "-h" || $ARG == "--help" ]] && usage && exit 0
 done
 
 # Assembling PKG_LIST and DEST_DIR
-PARAMS=$(getopt -o o:j:v --long out:,jobs:,verbose -n "$myname" -- "$@")
-[[ $? -ne 0 ]] && echo "Try '$myname --help' for more information." && exit -2
+PARAMS=$(getopt -o o:j:vV --long out:,jobs:,verbose,version -n "$myname" -- "$@")
+[[ $? -ne 0 ]] && echo "Try '$myname --help' for more information." && exit 3
 eval set -- "$PARAMS"
 DEST_DIR=$PWD	# Default value
 VERBOSITY=0		# Default value
@@ -145,7 +151,7 @@ while true ; do
 	case "$1" in
 		-o|--out)
 		DEST_DIR="$(readlink -e $2)"
-		[[ $? -ne 0 ]] && echo -e "The directory \e[39;1m$2\e[0m does not exist!" && exit -3
+		[[ $? -ne 0 ]] && echo -e "The directory \e[39;1m$2\e[0m does not exist!" && exit 2
 		shift
 		;;
 
@@ -154,7 +160,7 @@ while true ; do
 			MAX_JOBS=$2
 		else
 			echo -e "\e[39;1m$2\e[0m is not a valid integer!"
-			exit -1
+			exit 2
 		fi
 		shift
 		;;
@@ -163,14 +169,19 @@ while true ; do
 		VERBOSITY=$((VERBOSITY+1))
 		;;
 
+		-V|--version)
+		version
+		exit 0
+		;;
+
 		--)
 		shift
 		break
 		;;
 
 		*)
-		help
-		exit -4
+		usage
+		exit 1
 		;;
 	esac
 	shift
@@ -178,7 +189,7 @@ done
 PKG_LIST=($*)
 
 # Checking the PKG_LIST
-[[ ${#PKG_LIST[@]} == 0 ]] && help && exit -1
+[[ ${#PKG_LIST[@]} == 0 ]] && usage && exit 1
 for package in "${PKG_LIST[@]}"; do
 	if [[ ! -d /var/lib/pacman/local/${package}-$(pacman -Qi ${package} 2>/dev/null | sed -n 2p | awk '{print $3}') ]]; then
 		PKG_NOTFOUND+=("\"${package}\" ")
@@ -187,7 +198,7 @@ done
 if [[ ${#PKG_NOTFOUND} -ne 0 ]]; then
 	echo -e "The following package(s) could not be found on your system: \e[39;1m${PKG_NOTFOUND[@]}\e[0m"
 	echo -e "Keep in mind that the package(s) have to be installed!"
-	exit -127
+	exit 2
 fi
 
 # Assembling the packages
