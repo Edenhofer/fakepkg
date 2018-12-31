@@ -26,7 +26,7 @@ function fakebuild() {
 	cd "$TMPDIR"
 
 	# Fetching the .PKGINFO, .Changelog, .MTREE and .INSTALL file
-	[[ -f "${PKG_DB_ENTRY}/desc" ]] && cp -a "${PKG_DB_ENTRY}/desc" pre_PKGINFO || (echo -e "Could not find a databse entry for \e[39;1m${PKG_NAME}\e[0m" && return -1)
+	[[ -f "${PKG_DB_ENTRY}/desc" ]] && cp -a "${PKG_DB_ENTRY}/desc" pre_PKGINFO || (echo -e "Could not find a database entry for \e[39;1m${PKG_NAME}\e[0m" && return -1)
 	[[ -f "${PKG_DB_ENTRY}/install" ]] && cp -a "${PKG_DB_ENTRY}/install" .INSTALL
 	[[ -f "${PKG_DB_ENTRY}/mtree" ]] && gzip -dc "${PKG_DB_ENTRY}/mtree" > .MTREE
 	[[ -f "${PKG_DB_ENTRY}/changelog" ]] && cp -a "${PKG_DB_ENTRY}/changelog" .Changelog
@@ -81,7 +81,7 @@ function fakebuild() {
 	rm -rf $TMPDIR
 }
 
-# Run fakebuild in parralel with at maximum $MAX_JOBS jobs
+# Run fakebuild in parallel with a limit of $MAX_JOBS jobs
 # By default only run one job
 MAX_JOBS=1
 function parallelize() {
@@ -99,7 +99,7 @@ function parallelize() {
 function usage() {
 	cat <<-EOF
 	$myname $myver
-	This script was design to reassemble installed packages from its deliverd files.
+	This script was designed to reassemble installed packages from its delivered files.
 	It comes in handy if there is no internet connection available and you have no
 	access to an up-to-date package cache.
 
