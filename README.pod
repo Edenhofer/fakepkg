@@ -51,6 +51,10 @@ Build in parallel - you may want to set XZ_OPT
 
 Write output to <dir>
 
+=item B<-r>,B<--root <dir>>
+
+Use <dir> as an alternate root directory containing pacman db
+
 =back
 
 =head1 ENVIRONMENT VARIABLES
