@@ -12,7 +12,7 @@ Usage: B<fakepkg> [ OPTIONS ] [ TARGETS ]
 
 Pacman usually stores all downloaded packages in its package cache to enable the user
 to downgrade each and every package. However if the package cache was removed either
-by accident or by purpose to e.g. save disk space, it may be usefull to recrete the
+by accident or by purpose to e.g. save disk space, it may be useful to recreate the
 cache at a later point. The obvious choice would be to download all those packages again.
 However this is actually redundant since all files and folders from the packages should
 reside on your system. This is where fakepkg comes in handy. Its purpose is to recreate
@@ -87,7 +87,7 @@ Gordian Edenhofer <gordian.edenhofer@gmail.com>
 =head1 LICENSE
 
 Unless otherwise stated, the files in this project may be distributed under the
-termsof the GNU General Public License as published by the Free Software Foundation;
+terms of the GNU General Public License as published by the Free Software Foundation;
 either version 2 of the License, or any later version. This work is distributed
 in the hope that it will be useful, but without any warranty; without even the
 implied warranty of merchantability or fitness for a particular purpose. See [version 2]
