@@ -1,4 +1,5 @@
 #!/bin/bash
+export LANG=C
 
 declare -r myname='fakepkg'
 declare -r myver='1.40.2'
@@ -7,12 +8,16 @@ declare -r myver='1.40.2'
 # Make this variable something rather unique since on cleanup anything starting with this will be erased
 declare -r tmp_root='fakepkg'
 
+# Standard path where pacman db resides
+declare -r db_path='/var/lib/pacman'
+
 # Actual assembly function
 # $1: pkgname , $2: destination dir , $3 verbosity
 function fakebuild() {
+	pkgver=$(pacman -Qi --dbpath "${ROOT_DIR}${db_path}" ${package} 2>/dev/null | awk '/^Version/{print $3}')
 	# Setting global vars
-	PKG_NAME="${1}-$(pacman -Qi $1 | sed -n 2p | awk '{print $3}')"
-	PKG_DB_ENTRY="/var/lib/pacman/local/${PKG_NAME}"
+	PKG_NAME="${1}-${pkgver}"
+	PKG_DB_ENTRY="${ROOT_DIR}${db_path}/local/${PKG_NAME}"
 	PKG_EXT="xz"   # Default: this does define the compression format
 
 	# Skip if the package already exists in the destination dir
@@ -55,19 +60,19 @@ function fakebuild() {
 
 	# Assembling a list of all files belonging to the package
 	# The tar command is unable to handle very many arguments therefore create a file
-	pacman -Qlq $1 > ./package_file_list
-	echo ".PKGINFO" >> ./package_file_list
-	[[ -f ".INSTALL" ]] && echo ".INSTALL" >> ./package_file_list
-	[[ -f ".Changelog" ]] && echo ".Changelog" >> ./package_file_list
-	[[ -f ".MTREE" ]] && echo ".MTREE" >> ./package_file_list
+	pacman --dbpath "${ROOT_DIR}${db_path}" -Qlq $1 | sed 's%^/%%' > ./package_file_list
+	aux_files=(.PKGINFO)
+	[[ -f ".INSTALL" ]] && aux_files=("${aux_files[@]}" ".INSTALL")
+	[[ -f ".Changelog" ]] && aux_files=("${aux_files[@]}" ".Changelog")
+	[[ -f ".MTREE" ]] && aux_files=("${aux_files[@]}" ".MTREE")
 
 	# Taring things together
 	if [[ $3 -ge "1" ]]; then
 		#XZ_OPT="-T 0" \
-		tar --ignore-failed-read --owner=0 --group=0 --no-recursion -c -a --force-local -f "${PKG_NAME}.pkg.tar.${PKG_EXT}" -T ./package_file_list
+		tar -C "${ROOT_DIR:-/}" --ignore-failed-read --owner=0 --group=0 --no-recursion -c -a --force-local -f "${PKG_NAME}.pkg.tar.${PKG_EXT}" -T ./package_file_list -C "$TMPDIR" "${aux_files[@]}"
 	else
 		#XZ_OPT="-T 0" \
-		tar --ignore-failed-read --owner=0 --group=0 --no-recursion -c -a --force-local -f "${PKG_NAME}.pkg.tar.${PKG_EXT}" -T ./package_file_list 2>&1 >/dev/null | grep -i "permission denied" >/dev/null
+		tar -C "${ROOT_DIR:-/}" --ignore-failed-read --owner=0 --group=0 --no-recursion -c -a --force-local -f "${PKG_NAME}.pkg.tar.${PKG_EXT}" -T ./package_file_list -C "$TMPDIR" "${aux_files[@]}" 2>&1 >/dev/null | grep -i "permission denied" >/dev/null
 		[[ $? -eq 0 ]] && echo -e "The permission to open one or more directories was denied for \e[39;1m${PKG_NAME}\e[0m. The package may be incomplete!"
 	fi
 
@@ -108,10 +113,12 @@ function usage() {
 	    -v, --verbose           Increase verbosity
 	    -j, --jobs <jobs>       Build in parallel - you may want to set XZ_OPT
 	    -o, --out  <dir>        Write output to <dir>
+	    -r, --root <dir>        Use an alternate root directory containing pacman db
 
 	Examples:   # $myname slurm-llnl
 	            # $myname gzip munge binutils -o ~/Downloads
 	            # $myname -o /tmp -j 5 gzip munge binutils
+	            # $myname -o /tmp -r /mnt/my-old/system legacy-package
 	            # $myname \$(pacman -Qsq)
 
 	Copyright (C) Gordian Edenhofer <gordian.edenhofer@gmail.com>
@@ -142,11 +149,13 @@ for ARG in "$@"; do
 done
 
 # Assembling PKG_LIST and DEST_DIR
-PARAMS=$(getopt -o o:j:vV --long out:,jobs:,verbose,version -n "$myname" -- "$@")
+PARAMS=$(getopt -o o:j:r:vV --long out:,jobs:,root:,verbose,version -n "$myname" -- "$@")
 [[ $? -ne 0 ]] && echo "Try '$myname --help' for more information." && exit 3
 eval set -- "$PARAMS"
 DEST_DIR=$PWD	# Default value
 VERBOSITY=0		# Default value
+ROOT_DIR=""  # Default value
+
 while true ; do
 	case "$1" in
 		-o|--out)
@@ -162,6 +171,13 @@ while true ; do
 			echo -e "\e[39;1m$2\e[0m is not a valid integer!"
 			exit 2
 		fi
+		shift
+		;;
+
+		-r|--root)
+		ROOT_DIR=$2
+		[[ ! -d "${ROOT_DIR}" ]] && echo -e "The specified alternate root directory does not exist!" && exit -3
+		ROOT_DIR=$(readlink -e "${ROOT_DIR}")
 		shift
 		;;
 
@@ -191,7 +207,8 @@ PKG_LIST=($*)
 # Checking the PKG_LIST
 [[ ${#PKG_LIST[@]} == 0 ]] && usage && exit 1
 for package in "${PKG_LIST[@]}"; do
-	if [[ ! -d /var/lib/pacman/local/${package}-$(pacman -Qi ${package} 2>/dev/null | sed -n 2p | awk '{print $3}') ]]; then
+	pkgver=$(pacman -Qi --dbpath "${ROOT_DIR}${db_path}" ${package} 2>/dev/null | awk '/^Version/{print $3}')
+	if [[ ! -d "${ROOT_DIR}${db_path}"/local/${package}-${pkgver} ]]; then
 		PKG_NOTFOUND+=("\"${package}\" ")
 	fi
 done
