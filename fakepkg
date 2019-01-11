@@ -1,4 +1,11 @@
 #!/bin/bash
+#
+# fakepkg: Reassemble installed packages from its delivered files
+#
+
+# Strictly disallow uninitialized variables and exit on command failures (even in pipes)
+set -Eeuo pipefail
+
 export LANG=C
 
 declare -r myname='fakepkg'
@@ -18,10 +25,10 @@ declare -r ERROR_OPERATION=2
 # Actual assembly function
 # $1: pkgname , $2: destination dir , $3 verbosity
 function fakebuild() {
-	PKG_VER=$(pacman --dbpath "${ROOT_DIR}${db_path}" -Qi "${1}" 2>/dev/null | awk '/^Version/{print $3}')
+	PKG_VER=$(pacman --dbpath "${ROOT_DIR:-/}${db_path}" -Qi "${1}" 2>/dev/null | awk '/^Version/{print $3}')
 	# Setting global vars
 	PKG_NAME="${1}-${PKG_VER}"
-	PKG_DB_ENTRY="${ROOT_DIR}${db_path}/local/${PKG_NAME}"
+	PKG_DB_ENTRY="${ROOT_DIR:-/}${db_path}/local/${PKG_NAME}"
 	PKG_EXT="xz"   # Default: this does define the compression format
 
 	# Skip if the package already exists in the destination dir
@@ -69,7 +76,7 @@ function fakebuild() {
 
 	# Assembling a list of all files belonging to the package
 	# The tar command is unable to handle very many arguments therefore create a file
-	pacman --dbpath "${ROOT_DIR}${db_path}" -Qlq "$1" | sed 's%^/%%' > ./package_file_list
+	pacman --dbpath "${ROOT_DIR:-/}${db_path}" -Qlq "$1" | sed 's%^/%%' > ./package_file_list
 	aux_files=(".PKGINFO")
 	[[ -f ".INSTALL" ]] && aux_files+=(".INSTALL")
 	[[ -f ".Changelog" ]] && aux_files+=(".Changelog")
@@ -227,14 +234,15 @@ done
 PKG_LIST=("$@")
 
 # Checking the PKG_LIST
+PKG_NOTFOUND=()
 [[ ${#PKG_LIST[@]} == 0 ]] && usage && exit ${ERROR_USAGE}
 for package in "${PKG_LIST[@]}"; do
-	ver=$(pacman --dbpath "${ROOT_DIR}${db_path}" -Qi "${package}" 2>/dev/null | awk '/^Version/{print $3}')
-	if [[ ! -d "${ROOT_DIR}${db_path}/local/${package}-${ver}" ]]; then
+	ver=$(pacman --dbpath "${ROOT_DIR:-/}${db_path}" -Qi "${package}" 2>/dev/null | awk '/^Version/{print $3}')
+	if [[ ! -d "${ROOT_DIR:-/}${db_path}/local/${package}-${ver}" ]]; then
 		PKG_NOTFOUND+=("\"${package}\" ")
 	fi
 done
-if [[ ${#PKG_NOTFOUND} -ne 0 ]]; then
+if [[ ${#PKG_NOTFOUND[@]} -ne 0 ]]; then
 	>&2 echo -e "The following package(s) could not be found on your system: \e[39;1m${PKG_NOTFOUND[*]}\e[0m"
 	>&2 echo -e "Keep in mind that the package(s) have to be installed!"
 	exit ${ERROR_USAGE}
