@@ -14,9 +14,9 @@ declare -r db_path='/var/lib/pacman'
 # Actual assembly function
 # $1: pkgname , $2: destination dir , $3 verbosity
 function fakebuild() {
-	pkgver=$(pacman -Qi --dbpath "${ROOT_DIR}${db_path}" ${package} 2>/dev/null | awk '/^Version/{print $3}')
+	PKG_VER=$(pacman --dbpath "${ROOT_DIR}${db_path}" -Qi "${1}" 2>/dev/null | awk '/^Version/{print $3}')
 	# Setting global vars
-	PKG_NAME="${1}-${pkgver}"
+	PKG_NAME="${1}-${PKG_VER}"
 	PKG_DB_ENTRY="${ROOT_DIR}${db_path}/local/${PKG_NAME}"
 	PKG_EXT="xz"   # Default: this does define the compression format
 
@@ -60,11 +60,11 @@ function fakebuild() {
 
 	# Assembling a list of all files belonging to the package
 	# The tar command is unable to handle very many arguments therefore create a file
-	pacman --dbpath "${ROOT_DIR}${db_path}" -Qlq $1 | sed 's%^/%%' > ./package_file_list
-	aux_files=(.PKGINFO)
-	[[ -f ".INSTALL" ]] && aux_files=("${aux_files[@]}" ".INSTALL")
-	[[ -f ".Changelog" ]] && aux_files=("${aux_files[@]}" ".Changelog")
-	[[ -f ".MTREE" ]] && aux_files=("${aux_files[@]}" ".MTREE")
+	pacman --dbpath "${ROOT_DIR}${db_path}" -Qlq "$1" | sed 's%^/%%' > ./package_file_list
+	aux_files=(".PKGINFO")
+	[[ -f ".INSTALL" ]] && aux_files+=(".INSTALL")
+	[[ -f ".Changelog" ]] && aux_files+=(".Changelog")
+	[[ -f ".MTREE" ]] && aux_files+=(".MTREE")
 
 	# Taring things together
 	if [[ $3 -ge "1" ]]; then
@@ -207,8 +207,8 @@ PKG_LIST=($*)
 # Checking the PKG_LIST
 [[ ${#PKG_LIST[@]} == 0 ]] && usage && exit 1
 for package in "${PKG_LIST[@]}"; do
-	pkgver=$(pacman -Qi --dbpath "${ROOT_DIR}${db_path}" ${package} 2>/dev/null | awk '/^Version/{print $3}')
-	if [[ ! -d "${ROOT_DIR}${db_path}"/local/${package}-${pkgver} ]]; then
+	ver=$(pacman --dbpath "${ROOT_DIR}${db_path}" -Qi "${package}" 2>/dev/null | awk '/^Version/{print $3}')
+	if [[ ! -d "${ROOT_DIR}${db_path}/local/${package}-${ver}" ]]; then
 		PKG_NOTFOUND+=("\"${package}\" ")
 	fi
 done
