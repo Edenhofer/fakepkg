@@ -48,7 +48,7 @@ function fakebuild() {
 	# Hacking together the .PKGINFO
 	sed -n -e '/%BACKUP%/,$p' "${PKG_DB_ENTRY}/files" | awk '{print $1}' >> pre_PKGINFO
 	sed -i '/^$/d' pre_PKGINFO
-	while read line; do
+	while read -r line; do
 		if [[ $line =~ %[A-Z]+% ]]; then
 			PKG_VAR=$(echo "${line,,}" | tr -d '%')
 			case "$PKG_VAR" in
