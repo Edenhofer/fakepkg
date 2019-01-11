@@ -11,6 +11,10 @@ declare -r tmp_root='fakepkg'
 # Standard path where pacman db resides
 declare -r db_path='/var/lib/pacman'
 
+# Error codes
+declare -r ERROR_USAGE=1
+declare -r ERROR_OPERATION=2
+
 # Actual assembly function
 # $1: pkgname , $2: destination dir , $3 verbosity
 function fakebuild() {
@@ -23,7 +27,7 @@ function fakebuild() {
 	# Skip if the package already exists in the destination dir
 	if [[ -f "${2}/${PKG_NAME}.pkg.tar.${PKG_EXT}" ]]; then
 		echo -e "\e[39;1m${PKG_NAME}.pkg.tar.${PKG_EXT}\e[0m already exists in ${2}! Skipping..."
-		return -2
+		return ${ERROR_USAGE}
 	fi
 
 	# Create and enter a temporary dir
@@ -31,7 +35,7 @@ function fakebuild() {
 	cd "$TMPDIR"
 
 	# Fetching the .PKGINFO, .Changelog, .MTREE and .INSTALL file
-	[[ -f "${PKG_DB_ENTRY}/desc" ]] && cp -a "${PKG_DB_ENTRY}/desc" pre_PKGINFO || (echo -e "Could not find a database entry for \e[39;1m${PKG_NAME}\e[0m" && return -1)
+	[[ -f "${PKG_DB_ENTRY}/desc" ]] && cp -a "${PKG_DB_ENTRY}/desc" pre_PKGINFO || (echo -e "Could not find a database entry for \e[39;1m${PKG_NAME}\e[0m" && return ${ERROR_OPERATION})
 	[[ -f "${PKG_DB_ENTRY}/install" ]] && cp -a "${PKG_DB_ENTRY}/install" .INSTALL
 	[[ -f "${PKG_DB_ENTRY}/mtree" ]] && gzip -dc "${PKG_DB_ENTRY}/mtree" > .MTREE
 	[[ -f "${PKG_DB_ENTRY}/changelog" ]] && cp -a "${PKG_DB_ENTRY}/changelog" .Changelog
@@ -143,14 +147,14 @@ function clean_up {
 trap clean_up SIGHUP SIGINT SIGTERM
 
 # Show usage and quit if invoked with no parameters
-[[ $# -eq 0 ]] && usage && exit 1
+[[ $# -eq 0 ]] && usage && exit ${ERROR_USAGE}
 for ARG in "$@"; do
 	[[ $ARG == "-h" || $ARG == "--help" ]] && usage && exit 0
 done
 
 # Assembling PKG_LIST and DEST_DIR
 PARAMS=$(getopt -o o:j:r:vV --long out:,jobs:,root:,verbose,version -n "$myname" -- "$@")
-[[ $? -ne 0 ]] && echo "Try '$myname --help' for more information." && exit 3
+[[ $? -ne 0 ]] && echo "Try '$myname --help' for more information." && exit ${ERROR_USAGE}
 eval set -- "$PARAMS"
 DEST_DIR=$PWD	# Default value
 VERBOSITY=0		# Default value
@@ -160,7 +164,7 @@ while true ; do
 	case "$1" in
 		-o|--out)
 		DEST_DIR="$(readlink -e $2)"
-		[[ $? -ne 0 ]] && echo -e "The directory \e[39;1m$2\e[0m does not exist!" && exit 2
+		[[ $? -ne 0 ]] && echo -e "The directory \e[39;1m$2\e[0m does not exist!" && exit ${ERROR_USAGE}
 		shift
 		;;
 
@@ -169,14 +173,14 @@ while true ; do
 			MAX_JOBS=$2
 		else
 			echo -e "\e[39;1m$2\e[0m is not a valid integer!"
-			exit 2
+			exit ${ERROR_USAGE}
 		fi
 		shift
 		;;
 
 		-r|--root)
 		ROOT_DIR=$2
-		[[ ! -d "${ROOT_DIR}" ]] && echo -e "The specified alternate root directory does not exist!" && exit -3
+		[[ ! -d "${ROOT_DIR}" ]] && echo -e "The specified alternate root directory does not exist!" && exit ${ERROR_USAGE}
 		ROOT_DIR=$(readlink -e "${ROOT_DIR}")
 		shift
 		;;
@@ -197,7 +201,7 @@ while true ; do
 
 		*)
 		usage
-		exit 1
+		exit ${ERROR_USAGE}
 		;;
 	esac
 	shift
@@ -205,7 +209,7 @@ done
 PKG_LIST=($*)
 
 # Checking the PKG_LIST
-[[ ${#PKG_LIST[@]} == 0 ]] && usage && exit 1
+[[ ${#PKG_LIST[@]} == 0 ]] && usage && exit ${ERROR_USAGE}
 for package in "${PKG_LIST[@]}"; do
 	ver=$(pacman --dbpath "${ROOT_DIR}${db_path}" -Qi "${package}" 2>/dev/null | awk '/^Version/{print $3}')
 	if [[ ! -d "${ROOT_DIR}${db_path}/local/${package}-${ver}" ]]; then
@@ -215,7 +219,7 @@ done
 if [[ ${#PKG_NOTFOUND} -ne 0 ]]; then
 	echo -e "The following package(s) could not be found on your system: \e[39;1m${PKG_NOTFOUND[@]}\e[0m"
 	echo -e "Keep in mind that the package(s) have to be installed!"
-	exit 2
+	exit ${ERROR_USAGE}
 fi
 
 # Assembling the packages
@@ -224,3 +228,5 @@ if [[ $MAX_JOBS -gt "1" ]]; then
 else
 	for PKG in ${PKG_LIST[@]}; do fakebuild $PKG "$DEST_DIR" "$VERBOSITY"; done
 fi
+
+exit 0
