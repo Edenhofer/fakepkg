@@ -6,6 +6,7 @@
 # Strictly disallow uninitialized variables and exit on command failures (even in pipes)
 set -Eeuo pipefail
 
+unset LC_ALL
 export LANG=C
 
 declare -r myname='fakepkg'
