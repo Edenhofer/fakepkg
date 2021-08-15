@@ -30,11 +30,11 @@ function fakebuild() {
 	# Setting global vars
 	PKG_NAME="${1}-${PKG_VER}"
 	PKG_DB_ENTRY="${ROOT_DIR:-/}${db_path}/local/${PKG_NAME}"
-	PKG_EXT="xz"   # Default: this does define the compression format
+	PKGEXT="${PKGEXT:-.pkg.tar.xz}" # implicitly sets the compression format
 
 	# Skip if the package already exists in the destination dir
-	if [[ -f "${2}/${PKG_NAME}.pkg.tar.${PKG_EXT}" ]]; then
-		>&2 echo -e "\e[39;1m${PKG_NAME}.pkg.tar.${PKG_EXT}\e[0m already exists in ${2}! Skipping..."
+	if [[ -f "${2}/${PKG_NAME}${PKGEXT}" ]]; then
+		>&2 echo -e "\e[39;1m${PKG_NAME}${PKGEXT}\e[0m already exists in ${2}! Skipping..."
 		return ${ERROR_USAGE}
 	fi
 
@@ -87,13 +87,13 @@ function fakebuild() {
 	if [[ $3 -ge "1" ]]; then
 		#XZ_OPT="-T 0" \
 		tar --ignore-failed-read --owner=0 --group=0 --no-recursion -c -a \
-			--force-local -f "${PKG_NAME}.pkg.tar.${PKG_EXT}" \
+			--force-local -f "${PKG_NAME}${PKGEXT}" \
 			-C "${ROOT_DIR:-/}" -T ./package_file_list -C "$TMPDIR" \
 			"${aux_files[@]}"
 	else
 		#XZ_OPT="-T 0" \
 		if tar --ignore-failed-read --owner=0 --group=0 --no-recursion -c -a \
-			--force-local -f "${PKG_NAME}.pkg.tar.${PKG_EXT}" \
+			--force-local -f "${PKG_NAME}${PKGEXT}" \
 			-C "${ROOT_DIR:-/}" -T ./package_file_list -C "$TMPDIR" \
 			"${aux_files[@]}" 2>&1 >/dev/null \
 			| grep -i "permission denied" >/dev/null -; then
@@ -103,8 +103,8 @@ function fakebuild() {
 	fi
 
 	# Cleanup
-	if [[ -f ${PKG_NAME}.pkg.tar.${PKG_EXT} ]]; then
-		mv "${PKG_NAME}.pkg.tar.${PKG_EXT}" "$2"
+	if [[ -f ${PKG_NAME}${PKGEXT} ]]; then
+		mv "${PKG_NAME}${PKGEXT}" "$2"
 		>&2 echo -e "Reassembled \e[39;1m${PKG_NAME}\e[0m successfully!"
 	else
 		>&2 echo -e "Internal \e[39;1merror\e[0m occured while processing \e[39;1m${PKG_NAME}\e[0m!"
@@ -130,9 +130,9 @@ function parallelize() {
 function usage() {
 	cat <<-EOF
 	$myname $myver
-	This script was designed to reassemble installed packages from its delivered files.
-	It comes in handy if there is no internet connection available and you have no
-	access to an up-to-date package cache.
+	$myname reassembles installed packages from its delivered files. It comes in
+	handy if there is no internet connection available and you have no access to
+	an up-to-date package cache.
 
 	Usage: $myname [-v] [-j <jobs>] [-o <dir>] <package(s)>
 	    -h, --help              Display this help message and exit
@@ -141,14 +141,17 @@ function usage() {
 	    -o, --out  <dir>        Write output to <dir>
 	    -r, --root <dir>        Use an alternate root directory containing pacman db
 
+	$myname honors the environmnet variable \`PKGEXT\`. Use it to set the
+	compression scheme.
+
 	Examples:   # $myname slurm-llnl
 	            # $myname gzip munge binutils -o ~/Downloads
 	            # $myname -o /tmp -j 5 gzip munge binutils
-	            # $myname -o /tmp -r /mnt/my-old/system legacy-package
+	            # PKGEXT=".pkg.tar.zst" $myname -o /tmp -r /old/root legacy-package
 	            # $myname \$(pacman -Qsq)
 
 	Copyright (C) Gordian Edenhofer <gordian.edenhofer@gmail.com>
-	The script requires bash>=4.2, pacman, tar, xz and gzip.
+	The script requires bash>=4.2, pacman, tar and gzip.
 	EOF
 }
 
