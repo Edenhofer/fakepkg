@@ -29,7 +29,7 @@ B<Note:> Certain files and folders may only be read by root.
 Though fakepkg will warn you in those cases, consider running it as root.
 
 B<Note:> Reassembling packages may take some time, so be patient.
-However you may speed things up a little by using B<-j> or B<XZ_OPT>.
+However you may speed things up a little by using B<-j> or B<XZ_OPT / ZSTD_NBTHREADS>.
 
 =head1 OPTIONS
 
@@ -45,7 +45,7 @@ Increase verbosity
 
 =item B<-j>,B<--jobs <jobs>>
 
-Build in parallel - you may want to set XZ_OPT
+Build in parallel - you may want to set XZ_OPT / ZSTD_NBTHREADS
 
 =item B<-o>,B<--out <dir>>
 
@@ -59,10 +59,13 @@ Use <dir> as an alternate root directory containing pacman db
 
 =head1 ENVIRONMENT VARIABLES
 
-B<XZ_OPT> is fully honored and is considered by tar. Common usage scenarios are to
-utilize multicore compression. Maximum performace was achieved when used in
-conjunction with two jobs of fakepkg. However more than two active jobs may even
-lead to performance loss.
+B<PKGEXT> sets the file ending of the reassembled package and implicitly the
+compression format.
+
+B<XZ_OPT, ZSTD_CLEVEL, ZSTD_NBTHREADS, ...> are honored by tar. Common usage
+scenarios are to utilize multicore compression. Maximum performace was achieved
+when used in conjunction with two jobs of fakepkg. However more than two active
+jobs may even lead to performance loss.
 
 =head1 EXAMPLES
 
@@ -82,7 +85,7 @@ can be sped up by utilizing multiple jobs, in this case 4:
 Alternatively it may also make sense to set the tar environment variable for multi
 core compression. Hereby tar uses all the CPU power hence starting multiple jobs brings no performance gain:
 
-    XZ_OPT="-T 0" fakepkg $(pacman -Qsq)
+    PKGEXT=".pkg.tar.xz" XZ_OPT="-T 0" fakepkg $(pacman -Qsq)
 
 =head1 AUTHOR
 

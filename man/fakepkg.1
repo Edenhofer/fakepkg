@@ -1,4 +1,4 @@
-.TH FAKEPKG "1" "May 2016" "NONE" "User Commands"
+.TH FAKEPKG "1" "Aug 2021" "NONE" "User Commands"
 .SH NAME
 fakepkg \- reassemble Arch Linux packages
 .SH SYNOPSIS
@@ -13,7 +13,7 @@ Reassembling packages may take some time, so be patient. However you may speed
 things up a little by using
 .B \-j
 or
-.B XZ_OPT
+.B XZ_OPT / ZSTD_NBTHREADS
 \ .
 .SH OPTIONS
 .TP
@@ -24,7 +24,7 @@ Display this help message and exit
 Increase verbosity
 .TP
 .BR \-j , "\-\-jobs <jobs>"
-Build in parallel - you may want to set XZ_OPT
+Build in parallel - you may want to set XZ_OPT / ZSTD_NBTHREADS
 .TP
 .BR \-o , "\-\-out <dir>"
 Write output to <dir>
@@ -32,11 +32,15 @@ Write output to <dir>
 .BR \-r , "\-\-root <dir>"
 Use <dir> as an alternate root directory containing pacman db
 .SH ENVIRONMENT VARIABLES
-.B XZ_OPT
-is fully honored and is considered by tar. Common usage scenarios are to
-utilize multicore compression. Maximum performace was achieved when used in
-conjunction with two jobs of fakepkg. However more than two active jobs may even
-lead to performance loss.
+.B PKGEXT
+sets the file ending of the reassembled package and implicitly the compression
+format.
+
+.B XZ_OPT, ZSTD_CLEVEL, ZSTD_NBTHREADS, ...
+are honored by tar. Common usage scenarios are to utilize multicore
+compression. Maximum performace was achieved when used in conjunction with two
+jobs of fakepkg. However more than two active jobs may even lead to performance
+loss.
 .SH EXAMPLES
 Reassamble the package named "tar"
 
@@ -59,7 +63,7 @@ Reassamble a bunch of packages in parallel with verbose output
 Recreate all installed packages with xz's multicore compression
 
 .ti 12
-XZ_OPT="-T 0"
+PKGEXT=".pkg.tar.xz" XZ_OPT="-T 0"
 .B fakepkg
 $(pacman -Qsq)
 
@@ -81,4 +85,5 @@ There is NO WARRANTY, to the extent permitted by law.
 .SH "SEE ALSO"
 .B pacman,
 .B tar,
-.B xz
+.B xz,
+.B zstd
