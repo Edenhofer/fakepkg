@@ -30,7 +30,7 @@ function fakebuild() {
 	# Setting global vars
 	PKG_NAME="${1}-${PKG_VER}"
 	PKG_DB_ENTRY="${ROOT_DIR:-/}${db_path}/local/${PKG_NAME}"
-	PKGEXT="${PKGEXT:-.pkg.tar.xz}" # implicitly sets the compression format
+	PKGEXT="${PKGEXT:-.pkg.tar.zst}" # implicitly sets the compression format
 
 	# Skip if the package already exists in the destination dir
 	if [[ -f "${2}/${PKG_NAME}${PKGEXT}" ]]; then
@@ -147,7 +147,7 @@ function usage() {
 	Examples:   # $myname slurm-llnl
 	            # $myname gzip munge binutils -o ~/Downloads
 	            # $myname -o /tmp -j 5 gzip munge binutils
-	            # PKGEXT=".pkg.tar.zst" $myname -o /tmp -r /old/root legacy-package
+	            # PKGEXT=".pkg.tar.xz" $myname -o /tmp -r /old/root legacy-package
 	            # $myname \$(pacman -Qsq)
 
 	Copyright (C) Gordian Edenhofer <gordian.edenhofer@gmail.com>
