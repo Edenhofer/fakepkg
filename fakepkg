@@ -53,11 +53,14 @@ function fakebuild() {
 		return ${ERROR_OPERATION}
 	fi
 	[[ -f "${PKG_DB_ENTRY}/install" ]] && cp -a "${PKG_DB_ENTRY}/install" .INSTALL
-        if "${_MIMETYPE}" | grep -q "application/gzip"; then
-            gzip -dc "${_MTREE}" > .MTREE
-	elif "${_MIMETYPE}" | grep -q "text/plain"; then
-	    cp "${_MTREE}" .MTREE
-        fi
+
+	if [[ -f "${_MTREE}" ]]; then
+            if "${_MIMETYPE}" | grep -q "application/gzip"; then
+                gzip -dc "${_MTREE}" > .MTREE
+	    elif "${_MIMETYPE}" | grep -q "text/plain"; then
+	        cp "${_MTREE}" .MTREE
+            fi
+	fi
 	[[ -f "${PKG_DB_ENTRY}/changelog" ]] && cp -a "${PKG_DB_ENTRY}/changelog" .Changelog
 
 	# Hacking together the .PKGINFO
