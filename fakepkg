@@ -10,7 +10,7 @@ unset LC_ALL
 export LANG=C
 
 declare -r myname='fakepkg'
-declare -r myver='1.40.2'
+declare -r myver='1.42.0'
 
 # Directory in /tmp on which basis mktemp will create an unique tmp for each fakebuild
 # Make this variable something rather unique since on cleanup anything starting with this will be erased
