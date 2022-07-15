@@ -32,8 +32,7 @@ function fakebuild() {
 	PKG_DB_ENTRY="${ROOT_DIR:-/}${db_path}/local/${PKG_NAME}"
 	PKGEXT="${PKGEXT:-.pkg.tar.zst}" # implicitly sets the compression format
         local _MTREE="${PKG_DB_ENTRY}/mtree"
-        local _MIMETYPE="file --mime-type ${PKG_DB_ENTRY}/mtree"
-
+        local _MIMETYPE
 
 	# Skip if the package already exists in the destination dir
 	if [[ -f "${2}/${PKG_NAME}${PKGEXT}" ]]; then
@@ -55,9 +54,10 @@ function fakebuild() {
 	[[ -f "${PKG_DB_ENTRY}/install" ]] && cp -a "${PKG_DB_ENTRY}/install" .INSTALL
 
 	if [[ -f "${_MTREE}" ]]; then
-            if "${_MIMETYPE}" | grep -q "application/gzip"; then
+	    _MIMETYPE=$(file --mime-type "${PKG_DB_ENTRY}/mtree")
+            if echo "${_MIMETYPE}" | grep -q "application/gzip"; then
                 gzip -dc "${_MTREE}" > .MTREE
-	    elif "${_MIMETYPE}" | grep -q "text/plain"; then
+	    elif echo "${_MIMETYPE}" | grep -q "text/plain"; then
 	        cp "${_MTREE}" .MTREE
             fi
 	fi
