@@ -31,7 +31,7 @@ function fakebuild() {
 	PKG_NAME="${1}-${PKG_VER}"
 	PKG_DB_ENTRY="${ROOT_DIR:-/}${db_path}/local/${PKG_NAME}"
 	PKGEXT="${PKGEXT:-.pkg.tar.zst}" # implicitly sets the compression format
-        local _MTREE="${PKG_DB_ENTRY}/mtree"
+        local _MTREE="${PKG_DB_ENTRY#/}/mtree"
         local _MIMETYPE
 
 	# Skip if the package already exists in the destination dir
