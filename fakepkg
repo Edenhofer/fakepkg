@@ -55,9 +55,9 @@ function fakebuild() {
 
 	if [[ -f "${_MTREE}" ]]; then
 		_MIMETYPE=$(file --mime-type "${PKG_DB_ENTRY}/mtree")
-		if echo "${_MIMETYPE}" | grep -q "application/gzip"; then
+		if [[ "${_MIMETYPE}" == *"application/gzip"* ]]; then
 			gzip -dc "${_MTREE}" > .MTREE
-		elif echo "${_MIMETYPE}" | grep -q "text/plain"; then
+		elif [[ "${_MIMETYPE}" == *"text/plain"*]]; then
 			cp "${_MTREE}" .MTREE
 		fi
 	fi
