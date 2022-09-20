@@ -10,7 +10,7 @@ unset LC_ALL
 export LANG=C
 
 declare -r myname='fakepkg'
-declare -r myver='1.42.1'
+declare -r myver='1.42.2'
 
 # Directory in /tmp on which basis mktemp will create an unique tmp for each fakebuild
 # Make this variable something rather unique since on cleanup anything starting with this will be erased
@@ -57,7 +57,7 @@ function fakebuild() {
 		_MIMETYPE=$(file --mime-type "${PKG_DB_ENTRY}/mtree")
 		if [[ "${_MIMETYPE}" == *"application/gzip"* ]]; then
 			gzip -dc "${_MTREE}" > .MTREE
-		elif [[ "${_MIMETYPE}" == *"text/plain"*]]; then
+		elif [[ "${_MIMETYPE}" == *"text/plain"* ]]; then
 			cp "${_MTREE}" .MTREE
 		fi
 	fi
